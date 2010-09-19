@@ -126,6 +126,12 @@ my %options = (
 		value       => "shellscript",
 		description => "Post-hook shell script for dumpdata, and pre-hook for pushdata; SQL dump file path is passed as argument",
 		subcommands => [qw( pushdata dumpdata )]
+	},
+	'-compress' => {
+		description => "Turn on compression for mysql connections"
+	},
+	's' => {
+		description => "Show commands"
 	}
 );
 
@@ -230,10 +236,10 @@ foreach my $env (values %{$config->{'environments'}}){
 #exit;
 
 
-die "Error: The current directory must be an SVN working copy.\n" if not -e '.svn';
 
-my $svn_verbose_switch   .= exists $args{v} ? ' --verbose ' : '';
-my $mysql_verbose_switch .= exists $args{v} ? ' --verbose ' : '';
+my $svn_verbose_switch    .= exists $args{v} ? ' --verbose ' : '';
+my $mysql_verbose_switch  .= exists $args{v} ? ' --verbose ' : '';
+my $mysql_compress_switch .= exists $args{compress} ? ' --compress ' : '';
 
 use File::Basename;
 sub in_array #http://www.go4expert.com/forums/showthread.php?t=8978
@@ -246,6 +252,8 @@ sub in_array #http://www.go4expert.com/forums/showthread.php?t=8978
 
 # Setup new installation
 if($subcommand eq 'setup' || $subcommand eq 'install' || $subcommand eq 'init'){
+
+	die "Error: The current directory must be an SVN working copy.\n" if not -e '.svn';
 	
 	# Create directories and add them to repo
 	system("svn $svn_verbose_switch mkdir " . ($config->{'db_dump_dir'} || 'db'));
@@ -426,7 +434,7 @@ WPCONFIGFILE
 		print SQL " DEFAULT CHARACTER SET $config->{db_charset}" if $config->{db_charset};
 		print SQL ";";
 		close SQL;
-		system("mysql $mysql_verbose_switch -u $c->{db_user} --password=$c->{db_password} < ~temp.txt");
+		system("mysql $mysql_verbose_switch $mysql_compress_switch -u $c->{db_user} --password=$c->{db_password} < ~temp.txt");
 	}
 	
 	#foreach my $env (keys %{$config->{'environments'}}){
@@ -532,6 +540,7 @@ if($subcommand eq 'dumpdata' || $subcommand eq 'datadump'){
 	my $db_dump_dir = ($config->{'db_dump_dir'} || 'db');
 	my @options = (
 		$mysql_verbose_switch,
+		$mysql_compress_switch,		
 		'--host "' . ($c->{db_host} || $c->{server_name}) . '"',
 		'--user "' . $c->{db_user} . '"',
 		'--password="' . $c->{db_password} . '"',
@@ -613,7 +622,7 @@ if($subcommand eq 'pushdata' || $subcommand eq 'datapush'){
 	
 	my $db_host = $cDest->{db_host} || $cDest->{server_name};
 	system("$args{p} $db_dump_dir/~$dest_env.sql") if exists $args{p} && $args{p};
-	system("mysql $mysql_verbose_switch -h $db_host -u $cDest->{db_user} --password=\"$cDest->{db_password}\" $cDest->{db_name} < $db_dump_dir/~$dest_env.sql");
+	system("mysql $mysql_verbose_switch $mysql_compress_switch -h $db_host -u $cDest->{db_user} --password=\"$cDest->{db_password}\" $cDest->{db_name} < $db_dump_dir/~$dest_env.sql");
 	
 	#Clean up
 	#unlink("$db_dump_dir/~$dest_env.sql");

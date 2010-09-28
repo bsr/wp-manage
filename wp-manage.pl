@@ -127,7 +127,7 @@ my %options = (
 		description => "Post-hook shell script for dumpdata, and pre-hook for pushdata; SQL dump file path is passed as argument",
 		subcommands => [qw( pushdata dumpdata )]
 	},
-	'-compress' => {
+	'z' => {
 		description => "Turn on compression for mysql connections"
 	},
 	's' => {
@@ -239,7 +239,7 @@ foreach my $env (values %{$config->{'environments'}}){
 
 my $svn_verbose_switch    .= exists $args{v} ? ' --verbose ' : '';
 my $mysql_verbose_switch  .= exists $args{v} ? ' --verbose ' : '';
-my $mysql_compress_switch .= exists $args{compress} ? ' --compress ' : '';
+my $mysql_compress_switch .= exists $args{z} ? ' --compress ' : '';
 
 use File::Basename;
 sub in_array #http://www.go4expert.com/forums/showthread.php?t=8978
